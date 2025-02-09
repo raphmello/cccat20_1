@@ -66,8 +66,7 @@ app.post("/signup", async function (req, res) {
             res.json(result);
         }
     } catch (e) {
-        console.error(e);
-        res.status(500).json({message: "Internal server error", error: e});
+        res.status(500).json({message: "Internal server error"});
 	} finally {
         await connection.$pool.end();
 	}

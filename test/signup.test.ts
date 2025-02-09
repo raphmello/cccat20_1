@@ -120,3 +120,21 @@ test("Should sign up as driver", async function () {
             expect(response.data.accountId).toBeDefined();
         })
 });
+
+test("Should return status 500 when unexpected error", async function () {
+    await axios.post("http://localhost:3001/signup", {
+        name: "Raphael Mello",
+        password: "Raph1234",
+        isDriver: true,
+        isPassenger: true,
+        cpf: "37555503859",
+        carPlate: "ABC1234"
+    })
+        .catch(function (error) {
+            return error.response
+        })
+        .then(function (response) {
+            expect(response.status).toBe(500);
+            expect(response.data.message).toBe("Internal server error");
+        })
+});
