@@ -9,65 +9,67 @@ app.use(express.json());
 app.post("/signup", async function (req, res) {
 	const input = req.body;
 	const connection = pgp()("postgres://postgres:123456@localhost:5432/app");
-	try {
-		const id = crypto.randomUUID();
-		let result;
-		const [acc] = await connection.query("select * from ccca.account where email = $1", [input.email]);
-		if (!acc) {
+    try {
+        const id = crypto.randomUUID();
+        let result;
+        const [acc] = await connection.query("select * from ccca.account where email = $1", [input.email]);
+        if (!acc) {
+            if (input.name.match(/[a-zA-Z] [a-zA-Z]+/)) {
+                if (input.email.match(/^(.+)@(.+)$/)) {
+                    if (input.password.match(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d]{8,}$/)) {
+                        if (validateCpf(input.cpf)) {
+                            if (input.isDriver) {
+                                if (input.carPlate.match(/[A-Z]{3}[0-9]{4}/)) {
+                                    await connection.query("insert into ccca.account (account_id, name, email, cpf, car_plate, is_passenger, is_driver, password) values ($1, $2, $3, $4, $5, $6, $7, $8)", [id, input.name, input.email, input.cpf, input.carPlate, input.isPassenger, input.isDriver, input.password]);
 
-			if (input.name.match(/[a-zA-Z] [a-zA-Z]+/)) {
-				if (input.email.match(/^(.+)@(.+)$/)) {
-					if (input.password.match(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d]{8,}$/)) {
-						if (validateCpf(input.cpf)) {
-							if (input.isDriver) {
-								if (input.carPlate.match(/[A-Z]{3}[0-9]{4}/)) {
-									await connection.query("insert into ccca.account (account_id, name, email, cpf, car_plate, is_passenger, is_driver, password) values ($1, $2, $3, $4, $5, $6, $7, $8)", [id, input.name, input.email, input.cpf, input.carPlate, !!input.isPassenger, !!input.isDriver, input.password]);
-									
-									const obj = {
-										accountId: id
-									};
-									result = obj;
-								} else {
-									// invalid car plate
-									result = -6;
-								}
-							} else {
-								await connection.query("insert into ccca.account (account_id, name, email, cpf, car_plate, is_passenger, is_driver, password) values ($1, $2, $3, $4, $5, $6, $7, $8)", [id, input.name, input.email, input.cpf, input.carPlate, !!input.isPassenger, !!input.isDriver, input.password]);
-	
-								const obj = {
-									accountId: id
-								};
-								result = obj;
-							}
-						} else {
-							// invalid cpf
-							result = -1;
-						}
-					} else {
-						// invalid password
-						result = -5
-					}
-				} else {
-					// invalid email
-					result = -2;
-				}
+                                    const obj = {
+                                        accountId: id
+                                    };
+                                    result = obj;
+                                } else {
+                                    // invalid car plate
+                                    result = -6;
+                                }
+                            } else {
+                                await connection.query("insert into ccca.account (account_id, name, email, cpf, car_plate, is_passenger, is_driver, password) values ($1, $2, $3, $4, $5, $6, $7, $8)", [id, input.name, input.email, input.cpf, input.carPlate, input.isPassenger, input.isDriver, input.password]);
 
-			} else {
-				// invalid name
-				result = -3;
-			}
+                                const obj = {
+                                    accountId: id
+                                };
+                                result = obj;
+                            }
+                        } else {
+                            // invalid cpf
+                            result = -1;
+                        }
+                    } else {
+                        // invalid password
+                        result = -5
+                    }
+                } else {
+                    // invalid email
+                    result = -2;
+                }
 
-		} else {
-			// already exists
-			result = -4;
-		}
-		if (typeof result === "number") {
-			res.status(422).json({ message: result });
-		} else {
-			res.json(result);
-		}
+            } else {
+                // invalid name
+                result = -3;
+            }
+
+        } else {
+            // already exists
+            result = -4;
+        }
+        if (typeof result === "number") {
+            res.status(422).json({message: result});
+        } else {
+            res.json(result);
+        }
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({message: "Internal server error", error: e});
 	} finally {
-		await connection.$pool.end();
+        await connection.$pool.end();
 	}
 });
 
@@ -78,4 +80,4 @@ app.get("/accounts/:accountId", async function (req, res) {
 	res.json(output);
 });
 
-app.listen(3000);
+app.listen(3001);
